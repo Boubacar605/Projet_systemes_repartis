@@ -1,0 +1,12 @@
+Architecture du projet
+
+Le système repose sur une architecture microservices composée de trois composants
+principaux :
+
+1. Un frontend développé en React TypeScript, responsable de l’interface utilisateur.
+2. Une API backend développée avec Django REST Framework, exposant des endpoints REST.
+3. Une base de données PostgreSQL assurant la persistance des données.
+
+Chaque composant est conteneurisé avec Docker et déployé sur un cluster Kubernetes.
+L’installation et le déploiement sont automatisés via Ansible.
+Un pipeline CI/CD Jenkins permet l’intégration et le déploiement continus.
