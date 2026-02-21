@@ -1,0 +1,54 @@
+---
+- name: Deploy Kubernetes app
+  hosts: local
+  tasks:
+
+  - name: Start Minikube
+    shell: minikube start
+    ignore_errors: yes
+    register: minikube_start
+
+  - name: Build backend image (from project root) with Minikube docker
+    shell: |
+      eval $(minikube docker-env)
+      cd ..
+      docker build -t projet-systeme-reparti-backend -f docker/backend.Dockerfile .
+    args:
+      executable: /bin/bash
+    when: minikube_start is success
+    register: build_backend
+
+  - name: Build frontend image (from project root) with Minikube docker
+    shell: |
+      eval $(minikube docker-env)
+      cd ..
+      docker build -t projet-systeme-reparti-frontend -f docker/frontend.Dockerfile .
+    args:
+      executable: /bin/bash
+    when: minikube_start is success
+    register: build_frontend
+
+  - name: Fail if builds failed
+    fail:
+      msg: "Docker build failed. Check stderr above."
+    when: build_backend.failed or build_frontend.failed
+
+  - name: Apply PostgreSQL manifest
+    shell: kubectl apply -f ../k8s/postgres.yaml
+
+  - name: Apply Backend manifest
+    shell: kubectl apply -f ../k8s/backend.yaml
+
+  - name: Apply Frontend manifest
+    shell: kubectl apply -f ../k8s/frontend.yaml
+
+  - name: Wait for pods to be ready
+    shell: kubectl wait --for=condition=ready pod --all --timeout=60s
+    ignore_errors: yes
+
+  - name: Show pods
+    shell: kubectl get pods
+    register: pods_output
+
+  - debug:
+      var: pods_output.stdout_lines

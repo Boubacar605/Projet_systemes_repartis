@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+
+  db:
+    image: postgres:16
+    container_name: projet_db
+    environment:
+      POSTGRES_DB: projet_reparti
+      POSTGRES_USER: projet_user
+      POSTGRES_PASSWORD: BUBA1302
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    container_name: projet_backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    container_name: projet_frontend
+    ports:
+      - "5173:5173"
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - backend
+
+
+
+
+volumes:
+  postgres_data:

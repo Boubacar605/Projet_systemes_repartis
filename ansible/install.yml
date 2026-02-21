@@ -1,0 +1,134 @@
+---
+- name: Install DevOps tools
+  hosts: local
+  become: yes
+
+  tasks:
+
+  # ---------------------------
+  # UPDATE SYSTEM
+  # ---------------------------
+  - name: Update apt
+    apt:
+      update_cache: yes
+
+  # ---------------------------
+  # INSTALL DOCKER
+  # ---------------------------
+  - name: Install dependencies
+    apt:
+      name:
+        - ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+      state: present
+
+  - name: Add Docker GPG key
+    shell: |
+      install -m 0755 -d /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+      | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+  - name: Add Docker repo
+    shell: |
+      echo \
+      "deb [arch=$(dpkg --print-architecture) \
+      signed-by=/etc/apt/keyrings/docker.gpg] \
+      https://download.docker.com/linux/ubuntu \
+      $(lsb_release -cs) stable" \
+      > /etc/apt/sources.list.d/docker.list
+
+  - name: Install Docker
+    apt:
+      name:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+      state: present
+      update_cache: yes
+
+  - name: Start Docker
+    service:
+      name: docker
+      state: started
+      enabled: yes
+
+  - name: Add user to docker group
+    user:
+      name: "{{ ansible_user_id }}"
+      groups: docker
+      append: yes
+
+  # ---------------------------
+  # INSTALL kubectl
+  # ---------------------------
+  - name: Install kubectl
+    shell: |
+      curl -LO "https://dl.k8s.io/release/$(curl -L -s \
+      https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+      install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+    # ---------------------------
+  # INSTALL Minikube (déjà existant)
+  # ---------------------------
+  - name: Install Minikube
+    shell: |
+      curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+      install minikube-linux-amd64 /usr/local/bin/minikube
+
+  # ---------------------------
+  # INSTALL Jenkins (official method)
+  # ---------------------------
+  - name: Remove old Jenkins repo if exists
+    file:
+      path: /etc/apt/sources.list.d/jenkins.list
+      state: absent
+
+  - name: Remove old Jenkins key files if exist
+    file:
+      path: "{{ item }}"
+      state: absent
+    loop:
+      - /etc/apt/keyrings/jenkins-keyring.asc
+      - /usr/share/keyrings/jenkins-keyring.asc
+      - /usr/share/keyrings/jenkins-keyring.gpg
+      - /etc/apt/trusted.gpg.d/jenkins.gpg
+
+  - name: Install Java (required by Jenkins)
+    apt:
+      name: openjdk-17-jdk
+      state: present
+      update_cache: yes
+
+  - name: Create keyrings directory if not exists
+    file:
+      path: /etc/apt/keyrings
+      state: directory
+      mode: '0755'
+
+  - name: Download Jenkins GPG key (ASCII) to keyrings
+    get_url:
+      url: https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+      dest: /etc/apt/keyrings/jenkins-keyring.asc
+      mode: '0644'
+      force: yes
+
+  - name: Add Jenkins repository (signed by key)
+    apt_repository:
+      repo: "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
+      filename: jenkins
+      state: present
+      update_cache: yes
+
+  - name: Install Jenkins
+    apt:
+      name: jenkins
+      state: present
+      update_cache: yes
+
+  - name: Start and enable Jenkins service
+    service:
+      name: jenkins
+      state: started
+      enabled: yes
