@@ -2,25 +2,32 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_USER = "bubacar1234"
-        BACKEND_IMAGE = "backend"
-        FRONTEND_IMAGE = "frontend"
-        TAG = "latest"
+        DOCKER_HUB_USER = "boubacar1234"
+        BACKEND_IMAGE = "boubacar1234/backend:latest"
+        FRONTEND_IMAGE = "boubacar1234/frontend:latest"
     }
 
     stages {
 
-        stage('Clone Repo') {
+        stage('Checkout Code') {
             steps {
-                git url: 'https://github.com/Boubacar605/Projet_systemes_repartis.git', branch: 'main'
+                git branch: 'main',
+                url: 'https://github.com/Boubacar605/Projet_systemes_repartis.git'
             }
         }
 
-        stage('Build Images') {
+        stage('Build Backend Image') {
             steps {
                 sh '''
-                docker build -t $DOCKER_USER/backend:latest -f docker/backend.Dockerfile .
-                docker build -t $DOCKER_USER/frontend:latest -f docker/frontend.Dockerfile .
+                docker build -t $BACKEND_IMAGE -f docker/backend.Dockerfile .
+                '''
+            }
+        }
+
+        stage('Build Frontend Image') {
+            steps {
+                sh '''
+                docker build -t $FRONTEND_IMAGE -f docker/frontend.Dockerfile .
                 '''
             }
         }
@@ -28,11 +35,13 @@ pipeline {
         stage('Login Docker Hub') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub',
+                    credentialsId: 'dockerhub-credentials',
                     usernameVariable: 'USER',
                     passwordVariable: 'PASS'
                 )]) {
-                    sh 'echo $PASS | docker login -u $USER --password-stdin'
+                    sh '''
+                    echo $PASS | docker login -u $USER --password-stdin
+                    '''
                 }
             }
         }
@@ -40,8 +49,8 @@ pipeline {
         stage('Push Images') {
             steps {
                 sh '''
-                docker push $DOCKER_USER/backend:latest
-                docker push $DOCKER_USER/frontend:latest
+                docker push $BACKEND_IMAGE
+                docker push $FRONTEND_IMAGE
                 '''
             }
         }
@@ -50,7 +59,6 @@ pipeline {
             steps {
                 sh '''
                 kubectl apply -f k8s/
-                kubectl get pods
                 '''
             }
         }
@@ -59,6 +67,12 @@ pipeline {
     post {
         always {
             sh 'docker logout || true'
+        }
+        success {
+            echo "Pipeline terminé avec succès"
+        }
+        failure {
+            echo "Pipeline échoué"
         }
     }
 }
