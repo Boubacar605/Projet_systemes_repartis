@@ -18,6 +18,8 @@ services:
     build:
       context: .
       dockerfile: docker/backend.Dockerfile
+    volumes:
+      - ./backend/media:/app/media
     container_name: projet_backend
     ports:
       - "8000:8000"
