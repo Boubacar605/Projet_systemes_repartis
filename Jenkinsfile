@@ -16,20 +16,19 @@ pipeline {
         }
 
         stage('2 Lint & Test Backend') {
-           steps {
-            dir('backend') {
-             sh '''
+            steps {
+                dir('backend') {
+                 sh '''
                 python3 -m venv venv
                 . venv/bin/activate
-                python -m pip install --upgrade pip
                 python -m pip install -r requirements.txt
                 python -m pip install flake8
                 flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv
                 deactivate
             '''
-            }
-          }
-        }
+           }
+         }
+       }
 
         stage('3 Lint Frontend') {
             steps {
