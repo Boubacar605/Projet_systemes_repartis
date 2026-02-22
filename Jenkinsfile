@@ -19,9 +19,17 @@ pipeline {
             steps {
                 dir('backend') {
                     sh '''
-                        pip install --user -r requirements.txt
-                        pip install --user flake8
+                        # Créer et activer un environnement virtuel
+                        python3 -m venv venv
+                        . venv/bin/activate
+                        # Installer les dépendances
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                        pip install flake8
+                        # Linting
                         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+                        # Désactiver l'environnement
+                        deactivate
                     '''
                 }
             }
@@ -39,13 +47,13 @@ pipeline {
 
         stage('4 Build Backend Image') {
             steps {
-                sh "docker build -t ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:${IMAGE_TAG} ./backend"
+                sh "docker build -t ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:${IMAGE_TAG} -f docker/backend.Dockerfile ."
             }
         }
 
         stage('5 Build Frontend Image') {
             steps {
-                sh "docker build -t ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:${IMAGE_TAG} ./frontend"
+                sh "docker build -t ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:${IMAGE_TAG} -f docker/frontend.Dockerfile ."
             }
         }
 
@@ -76,23 +84,24 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
-         steps {
-          withKubeConfig([credentialsId: 'kubeconfig']) {
-            sh '''
-                sed -i "s|image:.*backend.*|image: ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:${IMAGE_TAG}|g" k8s/backend.yaml
-                sed -i "s|image:.*frontend.*|image: ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:${IMAGE_TAG}|g" k8s/frontend.yaml
-                kubectl apply -f k8s/postgres.yaml
-                kubectl rollout status deployment/postgres
-                kubectl apply -f k8s/backend.yaml
-                kubectl apply -f k8s/frontend.yaml
-                kubectl rollout status deployment/backend
-                kubectl rollout status deployment/frontend
-            '''
+        stage('8 Deploy to Kubernetes') {
+            steps {
+                withKubeConfig([credentialsId: 'kubeconfig']) {
+                    // Utilisation de guillemets doubles pour interpoler les variables Jenkins
+                    sh """
+                        sed -i "s|image:.*backend.*|image: ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:${IMAGE_TAG}|g" k8s/backend.yaml
+                        sed -i "s|image:.*frontend.*|image: ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:${IMAGE_TAG}|g" k8s/frontend.yaml
+                        kubectl apply -f k8s/postgres.yaml
+                        kubectl rollout status deployment/postgres
+                        kubectl apply -f k8s/backend.yaml
+                        kubectl apply -f k8s/frontend.yaml
+                        kubectl rollout status deployment/backend
+                        kubectl rollout status deployment/frontend
+                    """
+                }
+            }
         }
     }
-   }
- }
 
     post {
         always {
