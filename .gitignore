@@ -1,6 +1,6 @@
 # binaries ansible
-ansible/minikube-linux-amd64
 ansible/kubectl
+ansible/minikube-linux-amd64
 
 # python
 __pycache__/
