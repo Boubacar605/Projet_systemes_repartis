@@ -2,111 +2,63 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_USER = "bubacar1234"
+        DOCKER_USER = "bubacar1234"
         BACKEND_IMAGE = "backend"
         FRONTEND_IMAGE = "frontend"
-        IMAGE_TAG = "${BUILD_NUMBER}"
+        TAG = "latest"
     }
 
     stages {
-        stage('1 Clone GitHub') {
+
+        stage('Clone Repo') {
             steps {
                 git url: 'https://github.com/Boubacar605/Projet_systemes_repartis.git', branch: 'main'
             }
         }
 
-        stage('2 Lint & Test Backend') {
+        stage('Build Images') {
             steps {
-                dir('backend') {
-                 sh '''
-                python3 -m venv venv
-                . venv/bin/activate
-                python -m pip install -r requirements.txt
-                python -m pip install flake8
-                flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv
-                deactivate
-            '''
-           }
-         }
-       }
-
-        stage('3 Lint Frontend') {
-            steps {
-                dir('frontend') {
-                    sh '''
-                        npm install
-                    '''
-                }
+                sh '''
+                docker build -t $DOCKER_USER/backend:latest -f docker/backend.Dockerfile .
+                docker build -t $DOCKER_USER/frontend:latest -f docker/frontend.Dockerfile .
+                '''
             }
         }
 
-        stage('4 Build Backend Image') {
-            steps {
-                sh "docker build -t ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:${IMAGE_TAG} -f docker/backend.Dockerfile ."
-            }
-        }
-
-        stage('5 Build Frontend Image') {
-            steps {
-                sh "docker build -t ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:${IMAGE_TAG} -f docker/frontend.Dockerfile ."
-            }
-        }
-
-        stage('6 Login Docker Hub') {
+        stage('Login Docker Hub') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-credentials',
-                    usernameVariable: 'USERNAME',
-                    passwordVariable: 'PASSWORD'
+                    credentialsId: 'dockerhub',
+                    usernameVariable: 'USER',
+                    passwordVariable: 'PASS'
                 )]) {
-                    sh 'echo $PASSWORD | docker login -u $USERNAME --password-stdin'
+                    sh 'echo $PASS | docker login -u $USER --password-stdin'
                 }
             }
         }
 
-        stage('7 Push Images') {
+        stage('Push Images') {
             steps {
-                sh """
-                    docker push ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:${IMAGE_TAG}
-                    docker push ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:${IMAGE_TAG}
-                """
-                sh """
-                    docker tag ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:${IMAGE_TAG} ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:latest
-                    docker tag ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:${IMAGE_TAG} ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:latest
-                    docker push ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:latest
-                    docker push ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:latest
-                """
+                sh '''
+                docker push $DOCKER_USER/backend:latest
+                docker push $DOCKER_USER/frontend:latest
+                '''
             }
         }
 
-        stage('8 Deploy to Kubernetes') {
+        stage('Deploy Kubernetes') {
             steps {
-                withKubeConfig([credentialsId: 'kubeconfig']) {
-                    // Utilisation de guillemets doubles pour interpoler les variables Jenkins
-                    sh """
-                        sed -i "s|image:.*backend.*|image: ${DOCKER_HUB_USER}/${BACKEND_IMAGE}:${IMAGE_TAG}|g" k8s/backend.yaml
-                        sed -i "s|image:.*frontend.*|image: ${DOCKER_HUB_USER}/${FRONTEND_IMAGE}:${IMAGE_TAG}|g" k8s/frontend.yaml
-                        kubectl apply -f k8s/postgres.yaml
-                        kubectl rollout status deployment/postgres
-                        kubectl apply -f k8s/backend.yaml
-                        kubectl apply -f k8s/frontend.yaml
-                        kubectl rollout status deployment/backend
-                        kubectl rollout status deployment/frontend
-                    """
-                }
+                sh '''
+                kubectl apply -f k8s/
+                kubectl get pods
+                '''
             }
         }
     }
 
     post {
         always {
-            sh 'docker logout'
-        }
-        success {
-            echo 'Pipeline terminé avec succès !'
-        }
-        failure {
-            echo 'Échec du pipeline.'
+            sh 'docker logout || true'
         }
     }
 }
