@@ -2,8 +2,9 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_USER = "boubacar1234"
-        IMAGE_NAME = "mon-projet"
+        DOCKER_HUB_USER = "bubacar1234"
+        BACKEND_IMAGE = "backend"
+        FRONTEND_IMAGE = "frontend"
         IMAGE_TAG = "latest"
     }
 
@@ -15,20 +16,28 @@ pipeline {
             }
         }
 
-        stage('2 Build Docker Image') {
+        stage('2 Build Backend') {
             steps {
                 sh '''
-                docker build -t $DOCKER_HUB_USER/$IMAGE_NAME:$IMAGE_TAG ./docker
+                docker build -t $DOCKER_HUB_USER/$BACKEND_IMAGE:$IMAGE_TAG ./backend
                 '''
             }
         }
 
-        stage('3 Login Docker Hub') {
+        stage('3 Build Frontend') {
+            steps {
+                sh '''
+                docker build -t $DOCKER_HUB_USER/$FRONTEND_IMAGE:$IMAGE_TAG ./frontend
+                '''
+            }
+        }
+
+        stage('4 Login Docker Hub') {
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-credentials',
-                    usernameVariable: 'boubacar1234',
-                    passwordVariable: 'BUBA132002'
+                    usernameVariable: 'USERNAME',
+                    passwordVariable: 'PASSWORD'
                 )]) {
                     sh '''
                     echo $PASSWORD | docker login -u $USERNAME --password-stdin
@@ -37,19 +46,19 @@ pipeline {
             }
         }
 
-        stage('4 Push Image') {
+        stage('5 Push Images') {
             steps {
                 sh '''
-                docker push $DOCKER_HUB_USER/$IMAGE_NAME:$IMAGE_TAG
+                docker push $DOCKER_HUB_USER/$BACKEND_IMAGE:$IMAGE_TAG
+                docker push $DOCKER_HUB_USER/$FRONTEND_IMAGE:$IMAGE_TAG
                 '''
             }
         }
 
-        stage('5 Deploy') {
+        stage('6 Deploy Kubernetes') {
             steps {
                 sh '''
-                docker-compose down || true
-                docker-compose up -d
+                kubectl apply -f k8s/
                 '''
             }
         }
