@@ -60,15 +60,13 @@ pipeline {
         }
 
         stage('Start Minikube') {
-            steps {
-                sh '''
-                    # Vérifier si Minikube est en cours d'exécution, sinon le démarrer
-                    minikube status || minikube start
-                    # Utiliser le démon Docker de Minikube pour que les images soient disponibles localement (optionnel)
-                    eval $(minikube docker-env)
-                '''
-            }
-        }
+           steps {
+           sh '''
+             set -x
+             /usr/local/bin/minikube status || /usr/local/bin/minikube start --driver=docker
+           '''
+    }
+}
 
         stage('Deploy to Kubernetes') {
             steps {
@@ -77,7 +75,9 @@ pipeline {
                         # Mettre à jour les manifests avec le tag du build
                         sed -i "s|image:.*backend.*|image: ${BACKEND_IMAGE}|g" k8s/backend.yaml
                         sed -i "s|image:.*frontend.*|image: ${FRONTEND_IMAGE}|g" k8s/frontend.yaml
+                        # Appliquer tous les manifests
                         kubectl apply -f k8s/
+                        # Attendre que les déploiements soient prêts
                         kubectl rollout status deployment/backend
                         kubectl rollout status deployment/frontend
                         kubectl rollout status deployment/postgres || true
