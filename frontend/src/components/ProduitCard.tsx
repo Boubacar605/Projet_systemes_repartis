@@ -7,7 +7,7 @@ export default function ProduitCard({ produit, onEdit }: Props) {
   const supprimer = async () => {
     if (!confirm("Supprimer ce produit ?")) return;
 
-    await fetch(`http://127.0.0.1:8000/api/produits/${produit.id}/`, {
+    await fetch(`http://192.168.49.2:30007/api/produits/${produit.id}/`, {
       method: "DELETE",
     });
 
@@ -18,7 +18,7 @@ export default function ProduitCard({ produit, onEdit }: Props) {
   const imageUrl = produit.image
     ? produit.image.startsWith("http")
       ? produit.image // URL complète fournie par DRF
-      : `http://127.0.0.1:8000${produit.image}` // chemin relatif
+      : `http://192.168.49.2:30007${produit.image}` // chemin relatif
     : null;
 
   return (

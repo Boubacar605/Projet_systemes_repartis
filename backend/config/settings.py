@@ -25,8 +25,7 @@ SECRET_KEY = 'django-insecure-f@4i&nj(cq%ktqkh@p488!z&gln&hhg19%i$5h-1mm_sg4^-q-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 
@@ -45,14 +44,15 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+
 
 ]
 
@@ -83,9 +83,9 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "projet_reparti",
-        "USER": "projet_user",
-        "PASSWORD": "BUBA1302",
-        "HOST": "db",      # nom du service docker,
+        "USER": "postgres",
+        "PASSWORD": "postgres",
+        "HOST": "postgres",
         "PORT": "5432",
     }
 }
@@ -129,6 +129,9 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 CORS_ALLOW_ALL_ORIGINS = True
+CSRF_TRUSTED_ORIGINS = [
+    "http://192.168.49.2:30008",
+]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

@@ -18,7 +18,7 @@ export default function ProduitModal({ onClose, produit }: Props) {
   const [categories, setCategories] = useState<Categorie[]>([]);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/categories/")
+fetch("http://192.168.49.2:30007/api/categories/")
       .then(res => res.json())
       .then(setCategories);
   }, []);
@@ -32,8 +32,8 @@ export default function ProduitModal({ onClose, produit }: Props) {
 
     await fetch(
       produit
-        ? `http://127.0.0.1:8000/api/produits/${produit.id}/`
-        : "http://127.0.0.1:8000/api/produits/",
+        ? `http://192.168.49.2:30007/api/produits/${produit.id}/`
+        : "http://192.168.49.2:30007/api/produits/",
       {
         method: produit ? "PUT" : "POST",
         body: formData,
