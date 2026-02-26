@@ -60,13 +60,28 @@ pipeline {
         }
 
         stage('Start Minikube') {
-           steps {
+         steps {
            sh '''
-             set -x
-             /usr/local/bin/minikube status || /usr/local/bin/minikube start --driver=docker
-           '''
-    }
-}
+            set -e
+            echo "USER=$(whoami)"
+
+            # Nettoyer ancien cluster cassé
+            minikube delete || true
+
+            # Démarrer minikube proprement
+            minikube start \
+              --driver=docker \
+              --force \
+              --delete-on-failure \
+              --container-runtime=docker \
+              --cpus=2 \
+              --memory=4096
+
+            # Vérifier kubectl
+            kubectl get nodes
+          '''
+         }
+      }
 
         stage('Deploy to Kubernetes') {
             steps {
