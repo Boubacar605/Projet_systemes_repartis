@@ -83,23 +83,29 @@ pipeline {
          }
       }
 
-        stage('Deploy to Kubernetes') {
-            steps {
-                withKubeConfig([credentialsId: 'kubeconfig']) {
-                    sh """
-                        # Mettre à jour les manifests avec le tag du build
-                        sed -i "s|image:.*backend.*|image: ${BACKEND_IMAGE}|g" k8s/backend.yaml
-                        sed -i "s|image:.*frontend.*|image: ${FRONTEND_IMAGE}|g" k8s/frontend.yaml
-                        # Appliquer tous les manifests
-                        kubectl apply -f k8s/
-                        # Attendre que les déploiements soient prêts
-                        kubectl rollout status deployment/backend
-                        kubectl rollout status deployment/frontend
-                        kubectl rollout status deployment/postgres || true
-                    """
-                }
-            }
-        }
+       stage('Deploy to Kubernetes') {
+          steps {
+        sh '''
+        set -e
+
+        echo "USER=$(whoami)"
+
+        # Utiliser kubeconfig de Jenkins
+        export KUBECONFIG=/var/lib/jenkins/.kube/config
+
+        kubectl config view
+        kubectl get nodes
+
+        sed -i "s|image:.*backend.*|image: ${BACKEND_IMAGE}|g" k8s/backend.yaml
+        sed -i "s|image:.*frontend.*|image: ${FRONTEND_IMAGE}|g" k8s/frontend.yaml
+
+        kubectl apply -f k8s/
+        kubectl rollout status deployment/backend
+        kubectl rollout status deployment/frontend
+        kubectl rollout status deployment/postgres || true
+        '''
+       }
+      }
     }
 
     post {
