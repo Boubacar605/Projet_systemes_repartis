@@ -14,11 +14,11 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: projet-systeme-reparti-frontend
+        # Le tag sera remplacé par le numéro de build via Jenkins
+        image: boubacar1234/frontend:latest
         ports:
         - containerPort: 5173
-        imagePullPolicy: Never
-
+        #imagePullPolicy: Always
 ---
 apiVersion: v1
 kind: Service

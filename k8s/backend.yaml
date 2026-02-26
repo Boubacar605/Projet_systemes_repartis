@@ -14,14 +14,22 @@ spec:
     spec:
       containers:
       - name: backend
-        image: projet-systeme-reparti-backend
+        # L'image sera remplacée par le pipeline avec le bon tag
+        image: boubacar1234/backend:latest
         ports:
         - containerPort: 8000
         env:
         - name: DB_HOST
           value: postgres
-        imagePullPolicy: Never
-
+        - name: DB_NAME
+          value: projetdb
+        - name: DB_USER
+          value: postgres
+        - name: DB_PASSWORD
+          value: postgres
+        - name: DB_PORT
+          value: "5432"
+        #imagePullPolicy: Always
 ---
 apiVersion: v1
 kind: Service
