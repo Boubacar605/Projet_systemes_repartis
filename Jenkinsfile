@@ -101,7 +101,7 @@ pipeline {
 
         kubectl apply -f k8s/
         kubectl rollout status deployment/backend
-        kubectl rollout status deployment/frontend
+        kubectl rollout status deployment/frontend --timeout=300s
         kubectl rollout status deployment/postgres || true
         '''
        }
