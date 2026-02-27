@@ -59,53 +59,33 @@ pipeline {
             }
         }
 
-        stage('Start Minikube') {
-         steps {
-           sh '''
-            set -e
-            echo "USER=$(whoami)"
+         stage('Start Minikube') {
+            steps {
+                sh '''
+                if ! minikube status | grep -q "Running"; then
+                    minikube start --driver=docker --cpus=2 --memory=4096
+                else
+                    echo "Minikube already running"
+                fi
+                '''
+            }
+        }
 
-            # Nettoyer ancien cluster cassé
-            minikube delete || true
+      stage('Deploy to Kubernetes') {
+            steps {
+                sh '''
+                set -e
+                export KUBECONFIG=/var/lib/jenkins/.kube/config
 
-            # Démarrer minikube proprement
-            minikube start \
-              --driver=docker \
-              --force \
-              --delete-on-failure \
-              --container-runtime=docker \
-              --cpus=2 \
-              --memory=4096
+                sed -i "s|image:.*backend.*|image: ${BACKEND_IMAGE}|g" k8s/backend.yaml
+                sed -i "s|image:.*frontend.*|image: ${FRONTEND_IMAGE}|g" k8s/frontend.yaml
 
-            # Vérifier kubectl
-            kubectl get nodes
-          '''
-         }
-      }
-
-       stage('Deploy to Kubernetes') {
-          steps {
-        sh '''
-        set -e
-
-        echo "USER=$(whoami)"
-
-        # Utiliser kubeconfig de Jenkins
-        export KUBECONFIG=/var/lib/jenkins/.kube/config
-
-        kubectl config view
-        kubectl get nodes
-
-        sed -i "s|image:.*backend.*|image: ${BACKEND_IMAGE}|g" k8s/backend.yaml
-        sed -i "s|image:.*frontend.*|image: ${FRONTEND_IMAGE}|g" k8s/frontend.yaml
-
-        kubectl apply -f k8s/
-        kubectl rollout status deployment/backend
-        kubectl rollout status deployment/frontend --timeout=300s
-        kubectl rollout status deployment/postgres || true
-        '''
-       }
-      }
+                kubectl apply -f k8s/
+                kubectl rollout status deployment/backend --timeout=600s
+                kubectl rollout status deployment/frontend --timeout=600s
+                '''
+            }
+        }
     }
 
     post {

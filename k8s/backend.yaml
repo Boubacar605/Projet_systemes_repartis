@@ -29,7 +29,7 @@ spec:
           value: postgres
         - name: DB_PORT
           value: "5432"
-        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
 ---
 apiVersion: v1
 kind: Service

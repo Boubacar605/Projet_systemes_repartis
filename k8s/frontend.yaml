@@ -18,7 +18,7 @@ spec:
         image: boubacar1234/frontend:latest
         ports:
         - containerPort: 5173
-        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
 ---
 apiVersion: v1
 kind: Service
