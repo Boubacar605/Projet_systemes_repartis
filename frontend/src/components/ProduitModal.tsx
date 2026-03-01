@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-
+import {API_BASE_URL} from "../config.ts";
 type Categorie = {
   id: number;
   nom: string;
@@ -18,7 +18,7 @@ export default function ProduitModal({ onClose, produit }: Props) {
   const [categories, setCategories] = useState<Categorie[]>([]);
 
   useEffect(() => {
-fetch("http://192.168.49.2:30007/api/categories/")
+fetch(`${API_BASE_URL}/categories/`)
       .then(res => res.json())
       .then(setCategories);
   }, []);
@@ -32,8 +32,8 @@ fetch("http://192.168.49.2:30007/api/categories/")
 
     await fetch(
       produit
-        ? `http://192.168.49.2:30007/api/produits/${produit.id}/`
-        : "http://192.168.49.2:30007/api/produits/",
+        ? `${API_BASE_URL}/produits/${produit.id}/`
+        : `${API_BASE_URL}/produits/`,
       {
         method: produit ? "PUT" : "POST",
         body: formData,
