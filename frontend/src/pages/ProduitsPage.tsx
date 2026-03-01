@@ -16,15 +16,14 @@ type Props = {
   closeSidebar: () => void;
 };
 
-
 export default function ProduitsPage({ sidebarOpen, closeSidebar }: Props) {
-
   const [produits, setProduits] = useState<Produit[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editProduit, setEditProduit] = useState<Produit | null>(null);
 
   const chargerProduits = () => {
-    fetch("http://127.0.0.1:8000/api/produits/")
+    const API_BASE_URL = 'http://192.168.49.2:30007/api';
+    fetch(`${API_BASE_URL}/produits/`)
       .then(res => res.json())
       .then(data => setProduits(data));
   };
@@ -35,22 +34,18 @@ export default function ProduitsPage({ sidebarOpen, closeSidebar }: Props) {
 
   return (
     <div className="app-layout">
-      {/* SIDEBAR */}
       {sidebarOpen && (
-  <Sidebar
-    onAdd={() => {
-      closeSidebar();
-      setEditProduit(null);
-      setShowModal(true);
-    }}
-  />
-)}
+        <Sidebar
+          onAdd={() => {
+            closeSidebar();
+            setEditProduit(null);
+            setShowModal(true);
+          }}
+        />
+      )}
 
-
-      {/* CONTENU PRINCIPAL */}
       <main className="content">
         <h1>Catalogue des produits</h1>
-
         <div className="produits-grid">
           {produits.map(p => (
             <ProduitCard
@@ -65,7 +60,6 @@ export default function ProduitsPage({ sidebarOpen, closeSidebar }: Props) {
         </div>
       </main>
 
-      {/* MODAL AJOUT / MODIFICATION */}
       {showModal && (
         <ProduitModal
           produit={editProduit}
