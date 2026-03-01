@@ -1,4 +1,5 @@
-import {API_BASE_URL} from "../config.ts";
+// Supprimer l'import de config
+// import { API_BASE_URL } from '../config';
 
 type Props = {
   produit: any;
@@ -6,21 +7,20 @@ type Props = {
 };
 
 export default function ProduitCard({ produit, onEdit }: Props) {
+  const API_BASE_URL = 'http://192.168.49.2:30007/api'; // URL en dur
+
   const supprimer = async () => {
     if (!confirm("Supprimer ce produit ?")) return;
-
     await fetch(`${API_BASE_URL}/produits/${produit.id}/`, {
       method: "DELETE",
     });
-
     window.location.reload();
   };
 
-  // Construire correctement l'URL de l'image
   const imageUrl = produit.image
     ? produit.image.startsWith("http")
-      ? produit.image // URL complète fournie par DRF
-      : `${API_BASE_URL.replace('/api', '')}${produit.image}` // chemin relatif
+      ? produit.image
+      : `http://192.168.49.2:30007${produit.image}`
     : null;
 
   return (
@@ -29,7 +29,6 @@ export default function ProduitCard({ produit, onEdit }: Props) {
       <h3>{produit.nom}</h3>
       <p>{produit.prix} FCFA</p>
       <small>{produit.categorie_nom}</small>
-
       <div className="actions">
         <button onClick={onEdit}>Modifier</button>
         <button onClick={supprimer}>Supprimer</button>
