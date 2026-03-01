@@ -12,12 +12,30 @@ spec:
       labels:
         app: backend
     spec:
+
+      # 🔹 1️⃣ Attendre que PostgreSQL soit prêt
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox
+        command:
+          - sh
+          - -c
+          - |
+            until nc -z postgres 5432;
+            do
+              echo "Waiting for postgres...";
+              sleep 2;
+            done
+
       containers:
       - name: backend
-        # L'image sera remplacée par le pipeline avec le bon tag
         image: boubacar1234/backend:latest
+        imagePullPolicy: IfNotPresent
+
         ports:
         - containerPort: 8000
+
+        # 🔹 2️⃣ Variables d’environnement
         env:
         - name: DB_HOST
           value: postgres
@@ -29,7 +47,22 @@ spec:
           value: postgres
         - name: DB_PORT
           value: "5432"
-        imagePullPolicy: IfNotPresent
+
+        # 🔹 3️⃣ Health checks (important en soutenance)
+        readinessProbe:
+          httpGet:
+            path: /api/produits/
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+        livenessProbe:
+          httpGet:
+            path: /api/produits/
+            port: 8000
+          initialDelaySeconds: 20
+          periodSeconds: 10
+
 ---
 apiVersion: v1
 kind: Service
@@ -41,4 +74,5 @@ spec:
     app: backend
   ports:
     - port: 8000
+      targetPort: 8000
       nodePort: 30007
